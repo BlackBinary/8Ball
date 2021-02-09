@@ -1,6 +1,9 @@
 /* eslint-disable max-classes-per-file */
 // https://www.dimensions.com/element/9-foot-billiards-pool-table
 // Inch * 10
+import Pocket from './Pocket';
+import Ball from './Ball';
+
 const CANVAS_WIDTH = 1140;
 const CANVAS_HEIGHT = 640;
 
@@ -11,7 +14,6 @@ const SLATE_OFFSET = CUSHION_SIZE + RAIL_SIZE;
 const SLATE_WIDTH = CANVAS_WIDTH - (SLATE_OFFSET * 2);
 const SLATE_HEIGHT = CANVAS_HEIGHT - (SLATE_OFFSET * 2);
 
-const POCKET_RADIUS = 40;
 const POCKET_OFFSET = 50;
 
 const POCKETS = [
@@ -23,47 +25,10 @@ const POCKETS = [
   [CANVAS_WIDTH - POCKET_OFFSET, CANVAS_HEIGHT - POCKET_OFFSET],
 ];
 
-const BALL_RADIUS = 20;
-
 const FPS = 60;
 const FPS_MS = 1000 / FPS;
 
 const DEBUG = true;
-
-class Circle {
-  constructor(x, y, radius) {
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-  }
-}
-
-class Ball extends Circle {
-  constructor(ctx, x, y) {
-    super(x, y, BALL_RADIUS);
-    ctx.beginPath();
-    ctx.fillStyle = 'red';
-    ctx.arc(this.x, this.y, BALL_RADIUS, 0, 2 * Math.PI);
-    ctx.fill();
-  }
-}
-
-class Pocket extends Circle {
-  constructor(ctx, x, y) {
-    super(x, y, POCKET_RADIUS);
-    ctx.beginPath();
-    ctx.fillStyle = '#000000';
-    ctx.arc(x, y, this.radius, 0, 2 * Math.PI);
-    ctx.fill();
-  }
-}
-
-function colission(c1, c2) {
-  const dx = c2.x - c1.x;
-  const dy = c2.y - c1.y;
-  const rSum = c1.radius + c2.radius;
-  return (dx * dx + dy * dy <= rSum * rSum);
-}
 
 class Table {
   constructor(ctx) {
@@ -71,6 +36,7 @@ class Table {
     ctx.beginPath();
     ctx.fillStyle = '#593a27';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.stroke();
     // Cushion
     ctx.beginPath();
     ctx.fillStyle = '#042B01';
@@ -80,6 +46,8 @@ class Table {
       SLATE_WIDTH + CUSHION_SIZE,
       SLATE_HEIGHT + CUSHION_SIZE,
     );
+    ctx.stroke();
+    ctx.closePath();
     // Slate
     ctx.beginPath();
     ctx.fillStyle = '#0a6c03';
@@ -90,6 +58,7 @@ class Table {
       SLATE_HEIGHT,
     );
     ctx.stroke();
+    ctx.closePath();
   }
 }
 
@@ -112,18 +81,54 @@ export default class GameCanvas {
       this.mouseY = Math.round(e.clientY - this.cRect.top);
     });
 
+    this.balls = [
+      [200, 200],
+      [300, 300],
+    ].map(([x, y]) => new Ball(this.ctx, x, y));
+
     setInterval(() => {
+      this.ctx.shadowBlur = 0;
+      this.ctx.shadowColor = '';
       this.table = new Table(this.ctx);
-      this.pockets = POCKETS.map(([x, y]) => new Pocket(this.ctx, x, y));
+      this.balls = this.balls.map(({ x, y }) => {
+        const ball = new Ball(this.ctx, x, y);
+        ball.setColor('#000');
+        // ball.x += 1;
+        // ball.y += 1;
+        return ball;
+      });
+
       if (DEBUG) {
-        this.ctx.font = '30px Arial';
-        this.ctx.fillText(`${this.mouseX}, ${this.mouseY}`, 200, 200);
         this.ballTest = new Ball(this.ctx, this.mouseX, this.mouseY);
-        this.pockets.forEach((pocket) => {
-          console.log(colission(pocket, this.ballTest));
+        this.ballTest.setColor('#000');
+        this.balls.forEach((ball) => {
+          if (ball.colission(this.ballTest)) {
+            this.ballTest.setColor('#FF3300');
+            ball.setColor('#ffffFF3300ff');
+          }
         });
       }
-    }, DEBUG ? FPS_MS * 12 : FPS_MS);
+      // console.log(this.balls);
+      this.pockets = POCKETS.map(([x, y]) => {
+        const pocket = new Pocket(this.ctx, x, y);
+        pocket.setColor('#000');
+        this.balls.forEach((ball) => {
+          if (ball.colission(pocket)) {
+            pocket.setColor('#ffffff');
+            ball.setColor('#ffffff');
+          }
+        });
+        if (DEBUG && this.ballTest.colission(pocket)) {
+          pocket.setColor('#ffffff');
+          this.ballTest.setColor('#ffffff');
+        }
+        return pocket;
+      });
+      if (DEBUG) {
+        this.ctx.font = '30px Arial';
+        this.ctx.fillText(`${this.mouseX}, ${this.mouseY}`, 300, 200);
+      }
+    }, DEBUG ? FPS_MS * 2 : FPS_MS);
 
     return canvas;
   }
