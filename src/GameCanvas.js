@@ -62,6 +62,15 @@ class Table {
   }
 }
 
+function angle(a, e) {
+  const dy = e.y - a.y;
+  const dx = e.x - a.x;
+  let theta = Math.atan2(dy, dx); // range (-PI, PI]
+  theta *= 180 / Math.PI; // rads to degs, range (-180, 180]
+  // if (theta < 0) theta = 360 + theta; // range [0, 360)
+  return theta;
+}
+
 export default class GameCanvas {
   constructor() {
     const canvas = document.createElement('canvas');
@@ -83,7 +92,8 @@ export default class GameCanvas {
 
     this.balls = [
       [200, 200],
-      [300, 300],
+      [400, 200],
+      [240, 400],
     ].map(([x, y]) => new Ball(this.ctx, x, y));
 
     setInterval(() => {
@@ -105,6 +115,12 @@ export default class GameCanvas {
           if (ball.colission(this.ballTest)) {
             this.ballTest.setColor('#FF3300');
             ball.setColor('#ffffFF3300ff');
+            console.log(angle(this.ballTest, ball));
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.ballTest.x, this.ballTest.y);
+            this.ctx.lineTo(ball.x, ball.y);
+            this.ctx.stroke();
+            this.ctx.closePath();
           }
         });
       }
