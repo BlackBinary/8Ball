@@ -1,6 +1,6 @@
 import Circle from './Circle';
 
-const BALL_RADIUS = 20;
+export const BALL_RADIUS = 20;
 
 export default class Ball extends Circle {
   constructor(ctx, x, y) {

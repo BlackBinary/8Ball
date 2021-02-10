@@ -1,6 +1,6 @@
 import Circle from './Circle';
 
-const POCKET_RADIUS = 40;
+export const POCKET_RADIUS = 40;
 
 export default class Pocket extends Circle {
   constructor(ctx, x, y) {

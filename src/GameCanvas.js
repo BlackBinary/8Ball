@@ -2,7 +2,7 @@
 // https://www.dimensions.com/element/9-foot-billiards-pool-table
 // Inch * 10
 import Pocket from './Pocket';
-import Ball from './Ball';
+import Ball, { BALL_RADIUS } from './Ball';
 
 const CANVAS_WIDTH = 1140;
 const CANVAS_HEIGHT = 640;
@@ -24,6 +24,10 @@ const POCKETS = [
   [CANVAS_WIDTH - POCKET_OFFSET, POCKET_OFFSET],
   [CANVAS_WIDTH - POCKET_OFFSET, CANVAS_HEIGHT - POCKET_OFFSET],
 ];
+
+const APEX_X = (CANVAS_WIDTH / 2) + 100;
+const APEX_Y = CANVAS_HEIGHT / 2;
+const WHITE_X = (CANVAS_WIDTH / 2) - 200;
 
 const FPS = 60;
 const FPS_MS = 1000 / FPS;
@@ -90,19 +94,68 @@ export default class GameCanvas {
       this.mouseY = Math.round(e.clientY - this.cRect.top);
     });
 
+    const f = 1.7;
+
+    const ballTypes = {
+      white: ['white', false, false],
+      one: ['yellow', false, 1],
+      two: ['blue', false, 2],
+      three: ['red', false, 3],
+      four: ['purple', false, 4],
+      five: ['orange', false, 5],
+      six: ['green', false, 6],
+      seven: ['brown', false, 7],
+      eight: ['black', false, 8],
+      nine: ['yellow', true, 9],
+      ten: ['blue', true, 10],
+      eleven: ['red', true, 11],
+      twelfe: ['purple', true, 12],
+      thirteen: ['orange', true, 13],
+      fourteen: ['green', true, 14],
+      fifteen: ['brown', true, 15],
+    };
+
+    const ballsOrder = Object.keys(ballTypes);
+    ballsOrder.splice(0, 2);
+    ballsOrder.sort(() => 0.5 - Math.random());
+
     this.balls = [
-      [200, 200],
-      [400, 200],
-      [240, 400],
-    ].map(([x, y]) => new Ball(this.ctx, x, y));
+      // WHITE
+      [WHITE_X, APEX_Y, ...ballTypes.white], // Always white
+      // ROW 1
+      [APEX_X, APEX_Y, ...ballTypes.one], // Always one
+      // ROW 2
+      [APEX_X + (BALL_RADIUS * f), APEX_Y - BALL_RADIUS],
+      [APEX_X + (BALL_RADIUS * f), APEX_Y + BALL_RADIUS],
+      // ROW 3
+      [APEX_X + (BALL_RADIUS * (f * 2)), APEX_Y],
+      [APEX_X + (BALL_RADIUS * (f * 2)), APEX_Y - (BALL_RADIUS * 2)],
+      [APEX_X + (BALL_RADIUS * (f * 2)), APEX_Y + (BALL_RADIUS * 2)],
+      // ROW 4
+      [APEX_X + (BALL_RADIUS * (f * 3)), APEX_Y - BALL_RADIUS],
+      [APEX_X + (BALL_RADIUS * (f * 3)), APEX_Y + BALL_RADIUS],
+      [APEX_X + (BALL_RADIUS * (f * 3)), APEX_Y - (BALL_RADIUS * 3)],
+      [APEX_X + (BALL_RADIUS * (f * 3)), APEX_Y + (BALL_RADIUS * 3)],
+    ];
+    this.balls = this.balls
+      .map((ball, index) => [
+        ...ball,
+        ...ballTypes[ballsOrder[index]],
+      ])
+      .map(([x, y, color]) => {
+        const ball = new Ball(this.ctx, x, y);
+        console.log(color);
+        ball.setColor(color || '#000');
+        return ball;
+      });
 
     setInterval(() => {
       this.ctx.shadowBlur = 0;
       this.ctx.shadowColor = '';
       this.table = new Table(this.ctx);
-      this.balls = this.balls.map(({ x, y }) => {
+      this.balls = this.balls.map(({ x, y, color }) => {
         const ball = new Ball(this.ctx, x, y);
-        ball.setColor('#000');
+        ball.setColor(color);
         // ball.x += 1;
         // ball.y += 1;
         return ball;
@@ -114,7 +167,6 @@ export default class GameCanvas {
         this.balls.forEach((ball) => {
           if (ball.colission(this.ballTest)) {
             this.ballTest.setColor('#FF3300');
-            ball.setColor('#ffffFF3300ff');
             console.log(angle(this.ballTest, ball));
             this.ctx.beginPath();
             this.ctx.moveTo(this.ballTest.x, this.ballTest.y);
