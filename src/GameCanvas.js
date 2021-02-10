@@ -69,10 +69,17 @@ class Table {
 function angle(a, e) {
   const dy = e.y - a.y;
   const dx = e.x - a.x;
-  let theta = Math.atan2(dy, dx); // range (-PI, PI]
-  theta *= 180 / Math.PI; // rads to degs, range (-180, 180]
+  const theta = Math.atan2(dy, dx); // range (-PI, PI]
+  // theta *= 180 / Math.PI; // rads to degs, range (-180, 180]
   // if (theta < 0) theta = 360 + theta; // range [0, 360)
   return theta;
+}
+
+function distance(d, e) {
+  const a = e.x - d.x;
+  const b = e.y - d.y;
+
+  return Math.sqrt(a * a + b * b);
 }
 
 export default class GameCanvas {
@@ -85,13 +92,28 @@ export default class GameCanvas {
     this.ctx = canvas.getContext('2d');
 
     this.table = new Table(this.ctx, this.pockets);
-    this.mouseX = 0;
-    this.mouseY = 0;
+    this.mouse = { x: 0, y: 0 };
 
     canvas.addEventListener('mousemove', (e) => {
       this.cRect = canvas.getBoundingClientRect();
-      this.mouseX = Math.round(e.clientX - this.cRect.left);
-      this.mouseY = Math.round(e.clientY - this.cRect.top);
+      this.mouse = {
+        x: Math.round(e.clientX - this.cRect.left),
+        y: Math.round(e.clientY - this.cRect.top),
+      };
+    });
+
+    this.mouseDown = [0, 0, false];
+
+    canvas.addEventListener('mousedown', (e) => {
+      this.mouseDown = {
+        x: Math.round(e.clientX - this.cRect.left),
+        y: Math.round(e.clientY - this.cRect.top),
+        down: true,
+      };
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      this.mouseDown = { x: 0, y: 0, down: false };
     });
 
     const f = 1.7;
@@ -137,17 +159,21 @@ export default class GameCanvas {
       [APEX_X + (BALL_RADIUS * (f * 3)), APEX_Y - (BALL_RADIUS * 3)],
       [APEX_X + (BALL_RADIUS * (f * 3)), APEX_Y + (BALL_RADIUS * 3)],
     ];
+
     this.balls = this.balls
       .map((ball, index) => [
         ...ball,
         ...ballTypes[ballsOrder[index]],
       ])
-      .map(([x, y, color]) => {
+      .map(([x, y, color, stripe, name]) => {
         const ball = new Ball(this.ctx, x, y);
-        console.log(color);
         ball.setColor(color || '#000');
+        ball.setStripe(stripe);
+        ball.setName(name);
         return ball;
       });
+
+    this.dragDistance = 0;
 
     setInterval(() => {
       this.ctx.shadowBlur = 0;
@@ -156,24 +182,47 @@ export default class GameCanvas {
       this.balls = this.balls.map(({ x, y, color }) => {
         const ball = new Ball(this.ctx, x, y);
         ball.setColor(color);
-        // ball.x += 1;
-        // ball.y += 1;
+        ball.setName();
         return ball;
       });
 
       if (DEBUG) {
-        this.ballTest = new Ball(this.ctx, this.mouseX, this.mouseY);
-        this.ballTest.setColor('#000');
-        this.balls.forEach((ball) => {
-          if (ball.colission(this.ballTest)) {
-            this.ballTest.setColor('#FF3300');
-            console.log(angle(this.ballTest, ball));
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.ballTest.x, this.ballTest.y);
-            this.ctx.lineTo(ball.x, ball.y);
-            this.ctx.stroke();
-            this.ctx.closePath();
-          }
+        const angleToWhite = angle(this.mouse, this.balls[0]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.mouse.x, this.mouse.y);
+        this.ctx.lineTo(this.balls[0].x, this.balls[0].y);
+
+        const distanceToWhite = distance(this.mouse, this.balls[0]);
+
+        const lineEndX = this.balls[0].x + distanceToWhite * Math.cos(angleToWhite);
+        const lineEndY = this.balls[0].y + distanceToWhite * Math.sin(angleToWhite);
+
+        this.ctx.lineTo(lineEndX, lineEndY);
+
+        if (this.mouseDown.down) {
+          this.dragDistance = distance(this.mouse, this.mouseDown);
+        }
+        if (!this.mouseDown.down && this.dragDistance !== 0) {
+          const moveInterval = setInterval(() => {
+            this.balls[0].x = lineEndX;
+            this.balls[0].y = lineEndY;
+            if (this.balls[0].x === lineEndX && this.balls[0].y === lineEndY) {
+              clearInterval(moveInterval);
+            }
+          }, 1000);
+          this.dragDistance = 0;
+        }
+
+        this.ctx.stroke();
+        this.ctx.closePath();
+        this.balls.forEach((ball1) => {
+          this.balls.forEach((ball2) => {
+            if (ball1 !== ball2) {
+              if (ball1.colission(ball2)) {
+                // console.log(ball1, ball2);
+              }
+            }
+          });
         });
       }
       // console.log(this.balls);
@@ -186,15 +235,11 @@ export default class GameCanvas {
             ball.setColor('#ffffff');
           }
         });
-        if (DEBUG && this.ballTest.colission(pocket)) {
-          pocket.setColor('#ffffff');
-          this.ballTest.setColor('#ffffff');
-        }
         return pocket;
       });
       if (DEBUG) {
         this.ctx.font = '30px Arial';
-        this.ctx.fillText(`${this.mouseX}, ${this.mouseY}`, 300, 200);
+        this.ctx.fillText(`${this.mouse.x}, ${this.mouse.y}`, 300, 200);
       }
     }, DEBUG ? FPS_MS * 2 : FPS_MS);
 

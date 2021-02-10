@@ -14,6 +14,16 @@ export default class Ball extends Circle {
     this.render();
   }
 
+  setName(name) {
+    this.name = name;
+    this.render();
+  }
+
+  setStripe(stripe) {
+    this.stripe = stripe;
+    this.render();
+  }
+
   render() {
     this.ctx.beginPath();
     this.ctx.fillStyle = this.color;
