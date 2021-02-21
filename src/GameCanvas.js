@@ -186,32 +186,25 @@ export default class GameCanvas {
         return ball;
       });
 
+      const distanceToWhite = distance(this.mouse, this.balls[0]);
+      const angleToWhite = angle(this.mouse, this.balls[0]);
+
+      const lineEndX = this.balls[0].x + distanceToWhite * Math.cos(angleToWhite);
+      const lineEndY = this.balls[0].y + distanceToWhite * Math.sin(angleToWhite);
+
+      if (this.mouseDown.down) {
+        this.dragDistance = distance(this.mouse, this.mouseDown);
+        this.balls[0].x = lineEndX;
+        this.balls[0].y = lineEndY;
+        this.dragDistance = 0;
+      }
+
       if (DEBUG) {
-        const angleToWhite = angle(this.mouse, this.balls[0]);
         this.ctx.beginPath();
         this.ctx.moveTo(this.mouse.x, this.mouse.y);
         this.ctx.lineTo(this.balls[0].x, this.balls[0].y);
 
-        const distanceToWhite = distance(this.mouse, this.balls[0]);
-
-        const lineEndX = this.balls[0].x + distanceToWhite * Math.cos(angleToWhite);
-        const lineEndY = this.balls[0].y + distanceToWhite * Math.sin(angleToWhite);
-
         this.ctx.lineTo(lineEndX, lineEndY);
-
-        if (this.mouseDown.down) {
-          this.dragDistance = distance(this.mouse, this.mouseDown);
-        }
-        if (!this.mouseDown.down && this.dragDistance !== 0) {
-          const moveInterval = setInterval(() => {
-            this.balls[0].x = lineEndX;
-            this.balls[0].y = lineEndY;
-            if (this.balls[0].x === lineEndX && this.balls[0].y === lineEndY) {
-              clearInterval(moveInterval);
-            }
-          }, 1000);
-          this.dragDistance = 0;
-        }
 
         this.ctx.stroke();
         this.ctx.closePath();
