@@ -113,7 +113,11 @@ export default class GameCanvas {
     });
 
     canvas.addEventListener('mouseup', (e) => {
-      this.mouseDown = { x: 0, y: 0, down: false };
+      this.mouseDown = {
+        x: 0,
+        y: 0,
+        down: false,
+      };
     });
 
     const f = 1.7;
@@ -174,6 +178,7 @@ export default class GameCanvas {
       });
 
     this.dragDistance = 0;
+    this.moveWhite = { x: 0, y: 0, speed: 1 };
 
     setInterval(() => {
       this.ctx.shadowBlur = 0;
@@ -186,16 +191,41 @@ export default class GameCanvas {
         return ball;
       });
 
+      if (this.moveWhite.x !== this.balls[0].x) {
+        const delta = (this.moveWhite.x / 100) * this.moveWhite.speed;
+        if (this.balls[0].x > this.moveWhite.x && this.moveWhite.xn) {
+          this.balls[0].x += Math.abs(delta) * -1;
+        } else if (this.balls[0].x < this.moveWhite.x) {
+          this.balls[0].x += delta;
+        }
+      }
+
+      if (this.moveWhite.y !== this.balls[0].y) {
+        const delta = (this.moveWhite.y / 100) * this.moveWhite.speed;
+        if (this.balls[0].y > this.moveWhite.y && this.moveWhite.yn) {
+          this.balls[0].y += Math.abs(delta) * -1;
+        } else if (this.balls[0].y < this.moveWhite.y) {
+          this.balls[0].y += delta;
+        }
+      }
+
       const distanceToWhite = distance(this.mouse, this.balls[0]);
       const angleToWhite = angle(this.mouse, this.balls[0]);
 
-      const lineEndX = this.balls[0].x + distanceToWhite * Math.cos(angleToWhite);
-      const lineEndY = this.balls[0].y + distanceToWhite * Math.sin(angleToWhite);
+      const lineEndX = Math.round(this.balls[0].x + distanceToWhite * Math.cos(angleToWhite));
+      const lineEndY = Math.round(this.balls[0].y + distanceToWhite * Math.sin(angleToWhite));
 
       if (this.mouseDown.down) {
         this.dragDistance = distance(this.mouse, this.mouseDown);
-        this.balls[0].x = lineEndX;
-        this.balls[0].y = lineEndY;
+        this.moveWhite = {
+          x: lineEndX,
+          xn: lineEndX - this.balls[0].x <= 0,
+          y: lineEndY,
+          yn: lineEndY - this.balls[0].y <= 0,
+          speed: 1,
+        };
+        // this.balls[0].x = lineEndX;
+        // this.balls[0].y = lineEndY;
         this.dragDistance = 0;
       }
 
