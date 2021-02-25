@@ -112,14 +112,6 @@ export default class GameCanvas {
       };
     });
 
-    canvas.addEventListener('mouseup', (e) => {
-      this.mouseDown = {
-        x: 0,
-        y: 0,
-        down: false,
-      };
-    });
-
     const f = 1.7;
 
     const ballTypes = {
@@ -181,6 +173,7 @@ export default class GameCanvas {
     this.moveWhite = { x: 0, y: 0, speed: 1 };
 
     setInterval(() => {
+      console.log(this.moveWhite);
       this.ctx.shadowBlur = 0;
       this.ctx.shadowColor = '';
       this.table = new Table(this.ctx);
@@ -191,42 +184,49 @@ export default class GameCanvas {
         return ball;
       });
 
-      if (this.moveWhite.x !== this.balls[0].x) {
-        const delta = (this.moveWhite.x / 100) * this.moveWhite.speed;
-        if (this.balls[0].x > this.moveWhite.x && this.moveWhite.xn) {
-          this.balls[0].x += Math.abs(delta) * -1;
-        } else if (this.balls[0].x < this.moveWhite.x) {
-          this.balls[0].x += delta;
-        }
-      }
-
-      if (this.moveWhite.y !== this.balls[0].y) {
-        const delta = (this.moveWhite.y / 100) * this.moveWhite.speed;
-        if (this.balls[0].y > this.moveWhite.y && this.moveWhite.yn) {
-          this.balls[0].y += Math.abs(delta) * -1;
-        } else if (this.balls[0].y < this.moveWhite.y) {
-          this.balls[0].y += delta;
-        }
-      }
-
-      const distanceToWhite = distance(this.mouse, this.balls[0]);
       const angleToWhite = angle(this.mouse, this.balls[0]);
 
-      const lineEndX = Math.round(this.balls[0].x + distanceToWhite * Math.cos(angleToWhite));
-      const lineEndY = Math.round(this.balls[0].y + distanceToWhite * Math.sin(angleToWhite));
+      const lineEndX = Math.round(
+        this.balls[0].x + 100 * Math.cos(angleToWhite),
+      );
+      const lineEndY = Math.round(
+        this.balls[0].y + 100 * Math.sin(angleToWhite),
+      );
 
-      if (this.mouseDown.down) {
-        this.dragDistance = distance(this.mouse, this.mouseDown);
-        this.moveWhite = {
-          x: lineEndX,
-          xn: lineEndX - this.balls[0].x <= 0,
-          y: lineEndY,
-          yn: lineEndY - this.balls[0].y <= 0,
-          speed: 1,
-        };
-        // this.balls[0].x = lineEndX;
-        // this.balls[0].y = lineEndY;
-        this.dragDistance = 0;
+      if (
+        (this.moveWhite.y !== 0
+        && this.moveWhite.y !== this.balls[0].y)
+        || (
+          this.moveWhite.x !== 0
+          && this.moveWhite.x !== this.balls[0].x)
+      ) {
+        // console.log(this.moveWhite);
+        console.log('Move it');
+        const mx = this.moveWhite.x - this.balls[0].x;
+        const my = this.moveWhite.y - this.balls[0].y;
+        const divider = this.moveWhite.speed;
+
+        const plus = (dist, div) => (Math.abs(dist) < 10 ? dist : dist / div);
+
+        this.balls[0].x += plus(mx, divider);
+        this.balls[0].y += plus(my, divider);
+      } else if (this.mouseDown.down) {
+        canvas.addEventListener('mouseup', (e) => {
+          this.dragDistance = distance(this.mouse, this.mouseDown);
+          this.moveWhite = {
+            x: lineEndX,
+            xn: lineEndX - this.balls[0].x <= 0,
+            y: lineEndY,
+            yn: lineEndY - this.balls[0].y <= 0,
+            speed: (this.dragDistance / SLATE_WIDTH) * 50,
+          };
+          this.dragDistance = 0;
+          this.mouseDown = {
+            x: 0,
+            y: 0,
+            down: false,
+          };
+        });
       }
 
       if (DEBUG) {
